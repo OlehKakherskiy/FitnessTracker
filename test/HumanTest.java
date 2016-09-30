@@ -11,20 +11,18 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * Created by Oleh_Kakherskyi on 9/28/2016.
- */
+
 public class HumanTest {
 
     private Human human;
 
-    private static LocalDateTime targetTime;
+    private LocalDateTime targetTime;
 
     private static Map<ActivityType, Integer> activityAmount;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        targetTime = LocalDateTime.now();
+
         activityAmount = new HashMap<>();
         activityAmount.put(ActivityType.EAT, 2000);
         activityAmount.put(ActivityType.DRINK, 2600);
@@ -34,6 +32,7 @@ public class HumanTest {
     @Before
     public void beforeTest() throws Exception {
         human = new Human(activityAmount);
+        targetTime = LocalDateTime.now();
     }
 
     @Test
@@ -55,7 +54,7 @@ public class HumanTest {
         expectedDayActivityAmounts.put(ActivityType.WALK, 1000.0);
         expectedDayActivityAmounts.put(ActivityType.DRINK, 1200.0);
 
-        addActivityTemplate();
+        addActivityTemplate(targetTime, 1000, 400, 800, 1500, 1000);
         assertThat(human.getDayActivityAmounts(targetTime.toLocalDate()), is(expectedDayActivityAmounts));
     }
 
@@ -66,16 +65,76 @@ public class HumanTest {
             put(ActivityType.EAT, 2500 / 2000.0);
             put(ActivityType.WALK, 1000 / 2000.0);
         }};
-        addActivityTemplate();
+        addActivityTemplate(targetTime, 1000, 400, 800, 1500, 1000);
         assertThat(human.getDayStats(targetTime.toLocalDate()), is(dayStats));
     }
 
-    private void addActivityTemplate() {
-        human.addActivity(targetTime, 1000, ActivityType.EAT);
-        human.addActivity(targetTime.plus(2, ChronoUnit.HOURS), 400, ActivityType.DRINK);
-        human.addActivity(targetTime.plus(3, ChronoUnit.HOURS), 800, ActivityType.DRINK);
-        human.addActivity(targetTime.plus(3, ChronoUnit.HOURS), 1500, ActivityType.EAT);
-        human.addActivity(targetTime.plus(4, ChronoUnit.HOURS), 1000, ActivityType.WALK);
+    @Test
+    public void testGetPeriodMedianOneDay() throws Exception {
+        Map<ActivityType, Double> periodMedian = new HashMap<>();
+        periodMedian.put(ActivityType.DRINK, 700.0);
+        periodMedian.put(ActivityType.WALK, 2000.0);
+        periodMedian.put(ActivityType.EAT, 1350.0);
+
+        LocalDateTime startTime = targetTime;
+        addActivityTemplate(startTime, 1000, 400, 800, 1500, 1000);
+
+        startTime = targetTime.plus(1, ChronoUnit.DAYS);
+        addActivityTemplate(startTime, 500, 800, 700, 1350, 2000);
+
+        startTime = targetTime.plus(2, ChronoUnit.DAYS);
+        addActivityTemplate(startTime, 1500, 900, 100, 1370, 2300);
+
+        startTime = targetTime.plus(3, ChronoUnit.DAYS);
+        human.addActivity(startTime, 700, ActivityType.EAT);
+        human.addActivity(startTime, 200, ActivityType.DRINK);
+
+
+        startTime = targetTime.plus(2, ChronoUnit.WEEKS);
+        addActivityTemplate(startTime, 100, 300, 1000, 2000, 1200);
+
+
+        assertThat(human.getPeriodActivityMedian(targetTime, targetTime.plus(1, ChronoUnit.WEEKS)), is(periodMedian));
+    }
+
+    @Test
+    public void testGetPeriodMedianTwoDaysAvg() throws Exception {
+        Map<ActivityType, Double> periodMedian = new HashMap<>();
+        periodMedian.put(ActivityType.DRINK, 750.0);
+        periodMedian.put(ActivityType.WALK, 2150.0);
+        periodMedian.put(ActivityType.EAT, 1175.0);
+
+        LocalDateTime startTime = targetTime;
+        addActivityTemplate(startTime, 1000, 400, 800, 1500, 1000);
+
+        startTime = targetTime.plus(1, ChronoUnit.DAYS);
+        addActivityTemplate(startTime, 500, 800, 700, 1350, 2000);
+
+        startTime = targetTime.plus(2, ChronoUnit.DAYS);
+        addActivityTemplate(startTime, 1500, 900, 100, 1370, 2300);
+
+        startTime = targetTime.plus(3, ChronoUnit.DAYS);
+        human.addActivity(startTime, 700, ActivityType.EAT);
+        human.addActivity(startTime, 200, ActivityType.DRINK);
+
+        human.addActivity(startTime, 2500, ActivityType.WALK);
+        human.addActivity(startTime, 3000, ActivityType.DRINK);
+        human.addActivity(startTime, 200, ActivityType.EAT);
+
+
+        startTime = targetTime.plus(2, ChronoUnit.WEEKS);
+        addActivityTemplate(startTime, 100, 300, 1000, 2000, 1200);
+
+
+        assertThat(human.getPeriodActivityMedian(targetTime, targetTime.plus(1, ChronoUnit.WEEKS)), is(periodMedian));
+    }
+
+    private void addActivityTemplate(LocalDateTime targetTime, int eat1, int drink1, int drink2, int eat2, int walk1) {
+        human.addActivity(targetTime, eat1, ActivityType.EAT);
+        human.addActivity(targetTime.plus(2, ChronoUnit.HOURS), drink1, ActivityType.DRINK);
+        human.addActivity(targetTime.plus(3, ChronoUnit.HOURS), drink2, ActivityType.DRINK);
+        human.addActivity(targetTime.plus(3, ChronoUnit.HOURS), eat2, ActivityType.EAT);
+        human.addActivity(targetTime.plus(4, ChronoUnit.HOURS), walk1, ActivityType.WALK);
     }
 
 }

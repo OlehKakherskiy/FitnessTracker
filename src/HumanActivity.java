@@ -1,8 +1,6 @@
 import java.time.LocalDateTime;
 
-/**
- * Created by Oleh_Kakherskyi on 9/28/2016.
- */
+
 public class HumanActivity {
 
     private LocalDateTime time;

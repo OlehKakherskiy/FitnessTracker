@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Created by Oleh_Kakherskyi on 9/28/2016.
- */
+
 public class Human {
 
     private Map<ActivityType, Integer> expectedAmount;
@@ -41,6 +39,32 @@ public class Human {
         return humanActivities.stream().filter(humanActivity -> humanActivity.getTime().getDayOfYear() == date.getDayOfYear())
                 .collect(Collectors.groupingBy(HumanActivity::getActivityType,
                         Collectors.summingDouble(HumanActivity::getAmount)));
+    }
+
+    public Map<ActivityType, Double> getPeriodActivityMedian(LocalDateTime startFrom, LocalDateTime upTo) {
+        System.out.println(humanActivities);
+        Map<ActivityType, List<Double>> activitiesInPeriod = humanActivities.stream()
+                .filter(humanActivity -> !startFrom.isAfter(humanActivity.getTime()) && upTo.isAfter(humanActivity.getTime())).
+                        collect(Collectors.groupingBy(HumanActivity::getActivityType,
+                                Collectors.mapping(HumanActivity::getAmount, Collectors.toList())));
+        System.out.println(activitiesInPeriod);
+
+        Map<ActivityType, Double> medians = new HashMap<>();
+        for (Map.Entry<ActivityType, List<Double>> entry : activitiesInPeriod.entrySet()) {
+            medians.put(entry.getKey(), calculateMedian(entry.getValue().stream().sorted().collect(Collectors.toList())));
+        }
+        System.out.println(medians);
+        return medians;
+    }
+
+    private Double calculateMedian(List<Double> list) {
+        System.out.println(list);
+        int size = list.size();
+        if (size % 2 == 1) {
+            return list.get(size / 2);
+        } else {
+            return (list.get((size - 1) / 2) + list.get((list.size() - 1) / 2 + 1)) / 2; // (left_median + right_median) / 2
+        }
     }
 
     @Override

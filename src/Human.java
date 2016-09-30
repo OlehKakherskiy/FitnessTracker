@@ -28,41 +28,47 @@ public class Human {
     }
 
     public Map<ActivityType, Double> getDayStats(LocalDate localDate) {
-        Map<ActivityType, Double> stats = new HashMap<>();
-        for (Map.Entry<ActivityType, Double> activity : getDayActivityAmounts(localDate).entrySet()) {
-            stats.put(activity.getKey(), activity.getValue() / expectedAmount.get(activity.getKey()));
-        }
-        return stats;
+        return getDayActivityAmounts(localDate).entrySet().stream()
+                .map(activity -> {
+                    activity.setValue(activity.getValue() / expectedAmount.get(activity.getKey()));
+                    return activity;
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public Map<ActivityType, Double> getDayActivityAmounts(LocalDate date) {
-        return humanActivities.stream().filter(humanActivity -> humanActivity.getTime().getDayOfYear() == date.getDayOfYear())
+        return humanActivities.stream()
+                .filter(humanActivity -> date.isEqual(humanActivity.getTime().toLocalDate()))
                 .collect(Collectors.groupingBy(HumanActivity::getActivityType,
                         Collectors.summingDouble(HumanActivity::getAmount)));
     }
 
     public Map<ActivityType, Double> getPeriodActivityMedian(LocalDateTime startFrom, LocalDateTime upTo) {
-        System.out.println(humanActivities);
         Map<ActivityType, List<Double>> activitiesInPeriod = humanActivities.stream()
-                .filter(humanActivity -> !startFrom.isAfter(humanActivity.getTime()) && upTo.isAfter(humanActivity.getTime())).
-                        collect(Collectors.groupingBy(HumanActivity::getActivityType,
-                                Collectors.mapping(HumanActivity::getAmount, Collectors.toList())));
-        System.out.println(activitiesInPeriod);
+                .filter(humanActivity -> checkIfBetween(startFrom, upTo, humanActivity.getTime()))
+                .collect(Collectors.groupingBy(HumanActivity::getActivityType,
+                        Collectors.mapping(HumanActivity::getAmount, Collectors.toList())));
 
         Map<ActivityType, Double> medians = new HashMap<>();
         for (Map.Entry<ActivityType, List<Double>> entry : activitiesInPeriod.entrySet()) {
-            medians.put(entry.getKey(), calculateMedian(entry.getValue().stream().sorted().collect(Collectors.toList())));
+            medians.put(entry.getKey(), calculateMedian(sortList(entry.getValue())));
         }
-        System.out.println(medians);
         return medians;
     }
 
+    private List<Double> sortList(List<Double> toSort) {
+        return toSort.stream().sorted().collect(Collectors.toList());
+    }
+
+    private boolean checkIfBetween(LocalDateTime startFrom, LocalDateTime upTo, LocalDateTime targetTime) {
+        return !startFrom.isAfter(targetTime) && upTo.isAfter(targetTime);
+    }
+
     private Double calculateMedian(List<Double> list) {
-        System.out.println(list);
         int size = list.size();
         if (size % 2 == 1) {
             return list.get(size / 2);
-        } else {
+        } else { //median consists from 2 parts
             return (list.get((size - 1) / 2) + list.get((list.size() - 1) / 2 + 1)) / 2; // (left_median + right_median) / 2
         }
     }
